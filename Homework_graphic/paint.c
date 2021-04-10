@@ -13,6 +13,7 @@ rectangles, and points */
 */
 
 #define CIRCLE 6
+#define OPPOINT 7
 
 #include <GL/freeglut.h>
 #include <stdlib.h>
@@ -25,6 +26,12 @@ void myReshape(GLsizei, GLsizei);
 void mydisplay(void);
 void myinit();
 
+/*
+* 내가추가한함수
+*/
+
+int HWpick(int, int);
+
 void screen_box(int, int, int);
 void right_menu(int);
 void middle_menu(int);
@@ -32,6 +39,7 @@ void color_menu(int);
 void pixel_menu(int);
 void fill_menu(int);
 int pick(int, int);
+
 
 /* globals */
 
@@ -43,6 +51,8 @@ int rx, ry; /*raster position*/
 GLfloat r = 1.0, g = 1.0, b = 1.0; /* drawing color */
 int fill = 0; /* fill flag */
 
+
+/*점 찍는  함수였다...*/
 void drawSquare(int x, int y)
 {
 	y = wh - y;
@@ -55,7 +65,6 @@ void drawSquare(int x, int y)
 	glEnd();
 }
 
-
 /* reshaping routine called whenever window is resized or moved */
 
 void myReshape(GLsizei w, GLsizei h)
@@ -63,17 +72,22 @@ void myReshape(GLsizei w, GLsizei h)
 
 	/* adjust clipping box */
 
-	glMatrixMode(GL_PROJECTION);
+	glMatrixMode(GL_PROJECTION); /*투영*/
 	glLoadIdentity();
-	glOrtho(0.0, (GLdouble)w, 0.0, (GLdouble)h, -1.0, 1.0);
+	glOrtho(0.0, (GLdouble)w, 0.0, (GLdouble)h, -1.0, 1.0);/*직교 관측을 하겠다, 세팅은 정해진 범주 없음. 이 값 내에 들어있는 부분만 보인다.*/
+	/*glOrtho: 가시범위 설정*/
 	glMatrixMode(GL_MODELVIEW);
+	/*모델 뷰 모드에서 그림을 그리는 등의 액션을 취한다.*/
 	glLoadIdentity();
 
 	/* adjust viewport and clear */
 
 	glViewport(0, 0, w, h);
+	/*그림 그릴 창의 위치를 조정*/
 	glClearColor((GLclampf)0.8, (GLclampf)0.8, (GLclampf)0.8, (GLclampf)1.0);
+	/*정해진 색으로 배경을 채운다.*/
 	glClear(GL_COLOR_BUFFER_BIT);
+	/*버퍼 깨끗하게*/
 
 	/* set global size for use by drawing routine */
 
@@ -81,10 +95,11 @@ void myReshape(GLsizei w, GLsizei h)
 	wh = h;
 }
 
-void myinit()
+void myinit()/*맨 처음에 시작하는것. reshape와 비슷하지만 처음에하는것*/
 {
 
 	glViewport(0, 0, ww, wh);
+	/*초기값 세팅값으로 불러온다.*/
 
 
 	/* Pick 2D clipping window to match size of X window. This choice
@@ -102,22 +117,22 @@ void myinit()
 	glFlush();
 }
 
-void mymouse(int btn, int state, int x, int y)
+void mymouse(int btn, int state, int x, int y)/*마우스갖고 하는건 다 여기들어감. 어디를 클릭하느냐에 따라 액션이 달라진다!*/
 {
 	static int count;
-	int where;
+	int where;/*pick에서 들어온 값*/
 	static int xp[2], yp[2];
-	if (btn == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+	if (btn == GLUT_LEFT_BUTTON && state == GLUT_DOWN)/*마우스 왼쪽을 눌러야한다*/
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
-		where = pick(x, y);
+		where = pick(x, y);/*어디를 눌렀는가*/
 		glColor3f(r, g, b);
-		if (where != 0)
+		if (where != 0)/*0이 아니면 메뉴를 선택한 것이다.*/
 		{
 			count = 0;
 			draw_mode = where;
 		}
-		else switch (draw_mode)
+		else switch (draw_mode)/*캔버스를 누른 것. 선택한 그림모드에 따라 동작이 다르다.*/
 		{
 		case(LINE):
 			if (count == 0)
@@ -195,21 +210,54 @@ void mymouse(int btn, int state, int x, int y)
 			glRasterPos2i(rx, ry);
 			count = 0;
 		}
+		/*내가추가함*/
+		case(CIRCLE):
+			if (count == 0)
+			{
+				count++;
+				xp[0] = x;
+				yp[0] = y;
+			}
+			else
+			{
+				if (fill) glBegin(GL_POLYGON);
+				else glBegin(GL_LINE_LOOP);
+				glVertex2i(x, wh - y);
+				glVertex2i(x, wh - yp[0]);
+				glVertex2i(xp[0], wh - yp[0]);
+				glVertex2i(xp[0], wh - y);
+				glEnd();
+				draw_mode = 0;
+				count = 0;
+			}
+			break;
 		}   /* endelse*/
 	}/*endif*/
 	glPopAttrib();
 	glFlush();
 }
 
-int pick(int x, int y)
+int pick(int x, int y)/*메뉴 위치 지정*/
 {
 	y = wh - y;
 	if (y < wh - ww / 10) return 0;
-	else if (x < ww / 10) return LINE;
-	else if (x < ww / 5) return RECTANGLE;
-	else if (x < 3 * ww / 10) return TRIANGLE;
-	else if (x < 2 * ww / 5) return PPOINTSS;
-	else if (x < ww / 2) return TEXTT;
+	else if (x < ww / 10) return LINE;/*10분의 1*/
+	else if (x < ww / 5) return RECTANGLE;/*10분의 2*/
+	else if (x < 3 * ww / 10) return TRIANGLE;/*10분의 3*/
+	else if (x < 2 * ww / 5) return PPOINTSS;/*10분의 4*/
+	else if (x < ww / 2) return TEXTT;/*10분의 5*/
+	else return 0;
+}
+
+int HWpick(int x, int y)/*세로 메뉴로 변경*/
+{
+	y = wh - y;
+	if (x < ww - wh / 10) return 0;
+	else if (y < wh / 10) return LINE;/*10분의 1*/
+	else if (y < wh / 5) return RECTANGLE;/*10분의 2*/
+	else if (y < 3 * wh / 10) return TRIANGLE;/*10분의 3*/
+	else if (y < 2 * wh / 5) return PPOINTSS;/*10분의 4*/
+	else if (y < wh / 2) return TEXTT;/*10분의 5*/
 	else return 0;
 }
 
@@ -350,10 +398,15 @@ int main(int argc, char** argv)
 	glutAddSubMenu("Fill", f_menu);
 	glutAttachMenu(GLUT_MIDDLE_BUTTON);
 	myinit();
+	/*시작할 때 한 번 부름*/
 	glutReshapeFunc(myReshape);
-	glutKeyboardFunc(key);
+	/*윈도우 사이즈가 바뀔 때 myReshape 함수를 부른다*/
+	glutKeyboardFunc(key);/*마찬가지겠지*/
 	glutMouseFunc(mymouse);
+	/*마우스가 뭔가 발생하면 mymouse 함수를 부른다.*/
 	glutDisplayFunc(mydisplay);
+	/*디스플레이에 관한 이벤트? 윈도우가 하나라도 열려지면 최소한 한 번은 불러진다. 
+	첫 화면을 그리는 함수.*/
 	glutMainLoop();
 	return 0;
 }
