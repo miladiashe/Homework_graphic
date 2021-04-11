@@ -17,6 +17,7 @@ rectangles, and points */
 
 #include <GL/freeglut.h>
 #include <stdlib.h>
+#include <math.h>
 
 void mymouse(int, int, int, int);
 void key(unsigned char, int, int);
@@ -30,8 +31,9 @@ void myinit();
 * 내가추가한함수
 */
 
-int HWpick(int, int);
+int HWpick(int, int, int);
 void HWmydisplay(void);
+int HWcircle(int, int);
 
 void screen_box(int, int, int);
 void right_menu(int);
@@ -213,20 +215,34 @@ void mymouse(int btn, int state, int x, int y)/*마우스갖고 하는건 다 여기들어감.
 		}
 		/*내가추가함*/
 		case(CIRCLE):
-			if (count == 0)
+			if (count == 0)/*중심점*/
 			{
 				count++;
 				xp[0] = x;
 				yp[0] = y;
 			}
-			else
+			else/*반지름 길이만큼 찍게 한다*/
 			{
+				double r = sqrt((xp[0]-x)* (xp[0] - x) + (yp[0] - y)* (yp[0] - y));
+				double angle = 3.141592 / 100;
+				int max_angle = 360;
+
 				if (fill) glBegin(GL_POLYGON);
 				else glBegin(GL_LINE_LOOP);
+				for (int i = 0; i < 360; i++)
+				{
+					double angle = i * 3.141592 / 180;
+					double xdot = r * cos(angle);
+					double ydot = r * sin(angle);
+					glVertex2f(xdot+ xp[0], wh-ydot-yp[0]);
+				}
+
+				/*
 				glVertex2i(x, wh - y);
 				glVertex2i(x, wh - yp[0]);
 				glVertex2i(xp[0], wh - yp[0]);
 				glVertex2i(xp[0], wh - y);
+				*/
 				glEnd();
 				draw_mode = 0;
 				count = 0;
@@ -259,10 +275,11 @@ int HWpick(int x, int y)/*세로 메뉴로 변경*/
 	else if (y < 3 * wh / 10) return TRIANGLE;/*10분의 3*/
 	else if (y < 2 * wh / 5) return PPOINTSS;/*10분의 4*/
 	else if (y < wh / 2) return TEXTT;/*10분의 5*/
+	else if (y < 3* wh / 5) return CIRCLE;/*10분의 5*/
 	else return 0;
 }
 
-void HWmydisplay(void)
+void HWmydisplay(void)/*오른쪽에 그릴 것*/
 {
 	int shift = 0;
 
@@ -270,36 +287,40 @@ void HWmydisplay(void)
 	screen_box(ww - wh / 10, wh- (wh/10), wh / 10);
 	glColor3f(1.0, 0.0, 0.0);/*네모*/
 	screen_box(ww - wh / 10, wh - (wh / 5), wh / 10);
-	glColor3f(0.0, 1.0, 0.0);
+	glColor3f(0.0, 1.0, 0.0);/*세모*/
 	screen_box(ww - wh / 10, wh - (3*wh / 10), wh / 10);
-	glColor3f(0.0, 0.0, 1.0);
+	glColor3f(0.0, 0.0, 1.0);/*쩜*/
 	screen_box(ww - wh / 10, wh - (2*wh / 5), wh / 10);
-	glColor3f(1.0, 1.0, 0.0);
+	glColor3f(1.0, 1.0, 0.0);/*abc*/
 	screen_box(ww - wh / 10, wh - (wh/2), wh / 10);
+	glColor3f(1.0, 0.0, 1.0);/*원*/
+	screen_box(ww - wh / 10, wh - (3* wh / 5), wh / 10);
+
+
 	glColor3f(0.0, 0.0, 0.0);
 	glBegin(GL_LINES);
-	glVertex2i(wh / 40, wh - ww / 20);
-	glVertex2i(wh / 40 + ww / 20, wh - ww / 20);
+	glVertex2i(ww - wh / 40 , wh - wh / 20);
+	glVertex2i(ww - 3* wh / 40, wh - wh / 20);
 	glEnd();
 
-	screen_box(ww / 10 + ww / 40, wh - ww / 10 + ww / 40, ww / 20);
+	screen_box(ww - wh / 10 + wh / 40, wh - (wh / 5) + wh / 40, wh / 20);
 
 	glBegin(GL_TRIANGLES);
-	glVertex2i(ww / 5 + ww / 40, wh - ww / 10 + ww / 40);
-	glVertex2i(ww / 5 + ww / 20, wh - ww / 40);
-	glVertex2i(ww / 5 + 3 * ww / 40, wh - ww / 10 + ww / 40);
+	glVertex2i(ww - wh / 40, wh - (3 * wh / 10) + wh / 40);
+	glVertex2i(ww -wh/20, wh - (3 * wh / 10) + 3*wh / 40);
+	glVertex2i(ww - 3 * wh / 40, wh - (3 * wh / 10) + wh / 40);
 	glEnd();
 	glPointSize(3.0);
 	glBegin(GL_POINTS);
-	glVertex2i(3 * ww / 10 + ww / 20, wh - ww / 20);
+	glVertex2i(ww - wh / 10 + wh/20, wh - (2 * wh / 5)+wh/20);
 	glEnd();
-	glRasterPos2i(2 * ww / 5, wh - ww / 20);
+	glRasterPos2i(ww - wh / 10 +wh/80 , wh - (wh / 2)+ 3* wh/80);
 	glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'A');
 	shift = glutBitmapWidth(GLUT_BITMAP_9_BY_15, 'A');
-	glRasterPos2i(2 * ww / 5 + shift, wh - ww / 20);
+	glRasterPos2i(ww - wh / 10 + wh / 80 + shift, wh - (wh / 2) + 3 * wh / 80);
 	glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'B');
 	shift += glutBitmapWidth(GLUT_BITMAP_9_BY_15, 'B');
-	glRasterPos2i(2 * ww / 5 + shift, wh - ww / 20);
+	glRasterPos2i(ww - wh / 10 + wh / 80 + shift, wh - (wh / 2) + 3 * wh / 80);
 	glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'C');
 	glFlush();
 
