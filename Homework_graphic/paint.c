@@ -31,6 +31,7 @@ void myinit();
 */
 
 int HWpick(int, int);
+void HWmydisplay(void);
 
 void screen_box(int, int, int);
 void right_menu(int);
@@ -125,17 +126,17 @@ void mymouse(int btn, int state, int x, int y)/*마우스갖고 하는건 다 여기들어감.
 	if (btn == GLUT_LEFT_BUTTON && state == GLUT_DOWN)/*마우스 왼쪽을 눌러야한다*/
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
-		where = pick(x, y);/*어디를 눌렀는가*/
+		where = HWpick(x, y);/*어디를 눌렀는가*/
 		glColor3f(r, g, b);
 		if (where != 0)/*0이 아니면 메뉴를 선택한 것이다.*/
 		{
-			count = 0;
+			count = 0;/*카운트를 0으로 만들어줌*/
 			draw_mode = where;
 		}
 		else switch (draw_mode)/*캔버스를 누른 것. 선택한 그림모드에 따라 동작이 다르다.*/
 		{
-		case(LINE):
-			if (count == 0)
+		case(LINE):/*카운트 0이고 mode는 line이다.*/
+			if (count == 0)/*카운트가 0일 때*/
 			{
 				count++;
 				xp[0] = x;
@@ -147,7 +148,7 @@ void mymouse(int btn, int state, int x, int y)/*마우스갖고 하는건 다 여기들어감.
 				glVertex2i(x, wh - y);
 				glVertex2i(xp[0], wh - yp[0]);
 				glEnd();
-				draw_mode = 0;
+				draw_mode = 0;/*안그리는 모드로 되돌리기*/
 				count = 0;
 			}
 			break;
@@ -162,7 +163,7 @@ void mymouse(int btn, int state, int x, int y)/*마우스갖고 하는건 다 여기들어감.
 			}
 			else
 			{
-				if (fill) glBegin(GL_POLYGON);
+				if (fill) glBegin(GL_POLYGON);/*색칠여부*/
 				else glBegin(GL_LINE_LOOP);
 				glVertex2i(x, wh - y);
 				glVertex2i(x, wh - yp[0]);
@@ -251,7 +252,7 @@ int pick(int x, int y)/*메뉴 위치 지정*/
 
 int HWpick(int x, int y)/*세로 메뉴로 변경*/
 {
-	y = wh - y;
+	/*y = wh - y;*/
 	if (x < ww - wh / 10) return 0;
 	else if (y < wh / 10) return LINE;/*10분의 1*/
 	else if (y < wh / 5) return RECTANGLE;/*10분의 2*/
@@ -259,6 +260,49 @@ int HWpick(int x, int y)/*세로 메뉴로 변경*/
 	else if (y < 2 * wh / 5) return PPOINTSS;/*10분의 4*/
 	else if (y < wh / 2) return TEXTT;/*10분의 5*/
 	else return 0;
+}
+
+void HWmydisplay(void)
+{
+	int shift = 0;
+
+	glColor3f(1.0, 1.0, 1.0);/*직선*/
+	screen_box(ww - wh / 10, wh- (wh/10), wh / 10);
+	glColor3f(1.0, 0.0, 0.0);/*네모*/
+	screen_box(ww - wh / 10, wh - (wh / 5), wh / 10);
+	glColor3f(0.0, 1.0, 0.0);
+	screen_box(ww - wh / 10, wh - (3*wh / 10), wh / 10);
+	glColor3f(0.0, 0.0, 1.0);
+	screen_box(ww - wh / 10, wh - (2*wh / 5), wh / 10);
+	glColor3f(1.0, 1.0, 0.0);
+	screen_box(ww - wh / 10, wh - (wh/2), wh / 10);
+	glColor3f(0.0, 0.0, 0.0);
+	glBegin(GL_LINES);
+	glVertex2i(wh / 40, wh - ww / 20);
+	glVertex2i(wh / 40 + ww / 20, wh - ww / 20);
+	glEnd();
+
+	screen_box(ww / 10 + ww / 40, wh - ww / 10 + ww / 40, ww / 20);
+
+	glBegin(GL_TRIANGLES);
+	glVertex2i(ww / 5 + ww / 40, wh - ww / 10 + ww / 40);
+	glVertex2i(ww / 5 + ww / 20, wh - ww / 40);
+	glVertex2i(ww / 5 + 3 * ww / 40, wh - ww / 10 + ww / 40);
+	glEnd();
+	glPointSize(3.0);
+	glBegin(GL_POINTS);
+	glVertex2i(3 * ww / 10 + ww / 20, wh - ww / 20);
+	glEnd();
+	glRasterPos2i(2 * ww / 5, wh - ww / 20);
+	glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'A');
+	shift = glutBitmapWidth(GLUT_BITMAP_9_BY_15, 'A');
+	glRasterPos2i(2 * ww / 5 + shift, wh - ww / 20);
+	glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'B');
+	shift += glutBitmapWidth(GLUT_BITMAP_9_BY_15, 'B');
+	glRasterPos2i(2 * ww / 5 + shift, wh - ww / 20);
+	glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'C');
+	glFlush();
+
 }
 
 void screen_box(int x, int y, int s)
@@ -327,7 +371,7 @@ void mydisplay(void)
 	int shift = 0;
 
 	glColor3f(1.0, 1.0, 1.0);
-	screen_box(0, wh - ww / 10, ww / 10);
+	screen_box(0, wh - ww / 10, ww / 1);
 	glColor3f(1.0, 0.0, 0.0);
 	screen_box(ww / 10, wh - ww / 10, ww / 10);
 	glColor3f(0.0, 1.0, 0.0);
@@ -404,7 +448,7 @@ int main(int argc, char** argv)
 	glutKeyboardFunc(key);/*마찬가지겠지*/
 	glutMouseFunc(mymouse);
 	/*마우스가 뭔가 발생하면 mymouse 함수를 부른다.*/
-	glutDisplayFunc(mydisplay);
+	glutDisplayFunc(HWmydisplay);
 	/*디스플레이에 관한 이벤트? 윈도우가 하나라도 열려지면 최소한 한 번은 불러진다. 
 	첫 화면을 그리는 함수.*/
 	glutMainLoop();
